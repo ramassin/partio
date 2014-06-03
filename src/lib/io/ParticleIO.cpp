@@ -71,6 +71,7 @@ readers()
         data["ptf"]=readPTC;
         data["itbl"]=readBGEO;
         data["atbl"]=readBGEO;
+		data["ply"]=readPLY;
 	initialized=true;
 	initializationMutex.unlock();
     }

@@ -107,17 +107,18 @@ print(const ParticlesData* particles)
             case NONE:break;
             case FLOAT:
             case VECTOR:
-                for(int c=0;c<attrs[k].count;c++) std::cout<<accessors[k].raw<float>(it)[c];
+                for(int c=0;c<attrs[k].count;c++) std::cout<<accessors[k].raw<float>(it)[c] << " ";
                 break;
             case INT:
-                for(int c=0;c<attrs[k].count;c++) std::cout<<accessors[k].raw<int>(it)[c];
+                for(int c=0;c<attrs[k].count;c++) std::cout<<accessors[k].raw<int>(it)[c] << " ";
                 break;
             case INDEXEDSTR:
-                for(int c=0;c<attrs[k].count;c++) std::cout<<accessors[k].raw<int>(it)[c];
+                for(int c=0;c<attrs[k].count;c++) std::cout<<accessors[k].raw<int>(it)[c] << " ";
                 break;
             }
         }
         std::cout<<std::endl;
+		it++;
     }
 }
 

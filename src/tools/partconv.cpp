@@ -47,6 +47,8 @@ int main(int argc,char *argv[])
         Partio::write(argv[2],*p);
         p->release();
     }
-    
+#ifdef _DEBUG
+	system("pause");
+#endif
     return 0;
 }

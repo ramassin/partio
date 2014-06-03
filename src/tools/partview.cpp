@@ -475,11 +475,11 @@ void timer(int time)
         if (deltaT > 200)  // initial key press delay
         {
 
-            if (keyStates['='])
+            if (keyStates['p'])
             {
                 pointSize += 0.5;
             }
-            else if (keyStates['-'])
+            else if (keyStates['o'])
             {
                 if (pointSize > .5)
                 {
@@ -494,7 +494,7 @@ void timer(int time)
                     fov -= 5;
                 }
             }
-            else if (keyStates['Z'])
+            else if (keyStates['x'])
             {
                 if (fov < 180)
                 {
@@ -582,11 +582,11 @@ static void processNormalKeys(unsigned char key, int x, int y)
     anyKeyPressed = true;
     keyStates[key] = true;
 
-    if (keyStates['='])
+    if (keyStates['n'])
     {
         pointSize += 0.5;
     }
-    else if (keyStates['-'])
+    else if (keyStates['m'])
     {
         if (pointSize > .5)
         {
@@ -620,7 +620,7 @@ static void processNormalKeys(unsigned char key, int x, int y)
             fov -= 5;
         }
     }
-    else if (keyStates['Z'])
+    else if (keyStates['x'])
     {
         if (fov < 180)
         {

@@ -276,7 +276,7 @@ public:
         while(strm.avail_out!=0){
             if(strm.avail_in==0){ // buffer empty, read some more from file
                 istream.read((char*)in,part_of_zip_file?std::min((unsigned int)buffer_size,header.compressed_size-total_read):(unsigned int)buffer_size);
-                strm.avail_in=istream.gcount();
+                strm.avail_in=(unsigned int)istream.gcount();
                 total_read+=strm.avail_in;
                 strm.next_in=(Bytef*)in;}
             int ret=inflate(&strm,Z_NO_FLUSH); // decompress

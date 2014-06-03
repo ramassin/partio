@@ -242,9 +242,9 @@ bool writeBIN(const char* filename,const ParticlesData& p,const bool /*compresse
     header.fluidType = 9; // fluid type
     header.version =  11; // version (11 is most current)
     header.frameNumber =  1; // frame number
-    header.elapsedSimulationTime = 0.0416666; //   time elapsed (in seconds)
+    header.elapsedSimulationTime = 0.0416666f; //   time elapsed (in seconds)
     header.numParticles = p.numParticles(); // number of particles
-    header.radius = 0.1; // radius of emitter
+    header.radius = 0.1f; // radius of emitter
     header.pressure[0] = 1.0; // max, min, and avg pressure
     header.pressure[1] = 1.0;
     header.pressure[2] = 1.0;
@@ -289,8 +289,8 @@ bool writeBIN(const char* filename,const ParticlesData& p,const bool /*compresse
         output->write ((const char *) &header.emitterRotation[i], sizeof(float));
     for(int i=0; i <= 2; i++)
         output->write ((const char *) &header.emitterScale[i], sizeof(float));
-
-    for (int particles = 0; particles < p.numParticles(); particles++)
+    
+	for (int particles = 0; particles < p.numParticles(); particles++)
     {
         // set defaults for stuff that is not exported...
         float position[3] = {0.0,0.0,0.0};
@@ -309,8 +309,8 @@ bool writeBIN(const char* filename,const ParticlesData& p,const bool /*compresse
         float mass = 1.0;
         float temperature = 1.0;
         int pid = particles;
-
-        // now run thru  the exported attrs  and  replace values for things that we do have
+		
+		// now run thru  the exported attrs  and  replace values for things that we do have
 
         for(int attrIndex = 0; attrIndex < p.numAttributes(); attrIndex++)
         {
@@ -409,7 +409,11 @@ bool writeBIN(const char* filename,const ParticlesData& p,const bool /*compresse
 
             else
             {
-                cout << "Attribute found that  we don't support yet" << endl;
+				// avoid cout on every unsupported ParticleAttribute for every particle
+                if(particles < 1){
+					cout << "Attribute found that  we don't support yet" << endl;
+					cout << "Attribute name: "<< attr.name <<  endl;
+				}
             }
         }
 
