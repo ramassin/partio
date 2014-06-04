@@ -55,7 +55,7 @@ void writeHoudiniStr(ostream& ostream,const string& s)
 }
 
 
-ParticlesDataMutable* readBGEO(const char* filename,const bool headersOnly, char** attributes, int percentage)
+ParticlesDataMutable* readBGEO(const char* filename,const bool headersOnly)
 {
     auto_ptr<istream> input(Gzip_In(filename,ios::in|ios::binary));
     if(!*input){

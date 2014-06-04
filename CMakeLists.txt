@@ -83,7 +83,7 @@ ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
 ## Search for useful libraries
 find_package(GLUT REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(ZLIB)
+find_package(ZLIB REQUIRED)
 IF(ZLIB_FOUND)
     ADD_DEFINITIONS (-DPARTIO_USE_ZLIB)
     INCLUDE_DIRECTORIES ( ${ZLIB_INCLUDE_DIR} )
@@ -98,10 +98,11 @@ SET( PARTIO_LIBRARIES ${ZLIB_LIBRARY} partio )
 INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/src/lib )
 
 ## Traverse subdirectories
-ADD_SUBDIRECTORY (src/lib)
-ADD_SUBDIRECTORY (src/tools)
-ADD_SUBDIRECTORY (src/py)
-ADD_SUBDIRECTORY (src/tests)
-ADD_SUBDIRECTORY (src/doc)
+ADD_SUBDIRECTORY(src/lib)
+ADD_SUBDIRECTORY(src/tools)
+ADD_SUBDIRECTORY(src/py)
+ADD_SUBDIRECTORY(src/tests)
+ADD_SUBDIRECTORY(src/doc)
+ADD_SUBDIRECTORY(extern/rply)
 
 

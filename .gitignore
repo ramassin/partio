@@ -17,7 +17,10 @@
 *.check_cache
 *.out
 *.log
-/bin
+/[Bb]in
 /CMakeFiles
 Makefile
 /src/doc/*
+/extern/freeglut-2.8.0-1
+/extern/swigwin-2.0.4
+/extern/zlib-1.2.8

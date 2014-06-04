@@ -15,7 +15,7 @@ AAAAAAAAAAAAAAAAAAAAAAAARRRRRRRRRRRRRRRRRRRRRRGHHHHHHHHHHHHHHHHHHHHHH
 
 
 #include <stdio.h> 
-#include "../extern/rply.h"
+#include "../../extern/rply/rply.h"
 
 
 Partio::ParticleAttribute idHandle, posHandle, colHandle, qualHandle;
@@ -45,16 +45,20 @@ static int vertex_pos_cb(p_ply_argument argument) {
 }
 
 // vertex color handler callback
-static int vertex_col_cb(p_ply_argument argument) {
+static int vertex_col_cb_uint(p_ply_argument argument) {
+	const float scaleFactor=1.0/255.0;
 	long idx;
+
 	static unsigned int counter = 0; //unfortunately we have to keep a local counter
 	void* pinfo = 0;
 	ply_get_argument_user_data(argument, &pinfo, &idx);
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
 
 	float* pos=particle->dataWrite<float>(colHandle,counter);
-	float val = (float)ply_get_argument_value(argument)/255.0f;
+	float val = (float)ply_get_argument_value(argument) * scaleFactor;
 	pos[idx]=val;
+
+	// after we've done with Blue, increment particle index
 	if (idx==2)
 		counter++;
 
@@ -160,9 +164,9 @@ namespace Partio
 			posHandle = simple->addAttribute("position",  VECTOR, 3);
 		}
 
-		unsigned int nCol0  = ply_set_read_cb(input, "vertex", "red",   vertex_col_cb, simplePtr, 0);
-		unsigned int nCol1  = ply_set_read_cb(input, "vertex", "green", vertex_col_cb, simplePtr, 1);
-		unsigned int nCol2  = ply_set_read_cb(input, "vertex", "blue",  vertex_col_cb, simplePtr, 2);
+		unsigned int nCol0  = ply_set_read_cb(input, "vertex", "red",   vertex_col_cb_uint, simplePtr, 0);
+		unsigned int nCol1  = ply_set_read_cb(input, "vertex", "green", vertex_col_cb_uint, simplePtr, 1);
+		unsigned int nCol2  = ply_set_read_cb(input, "vertex", "blue",  vertex_col_cb_uint, simplePtr, 2);
 
 		const char* lastComment = NULL;
 

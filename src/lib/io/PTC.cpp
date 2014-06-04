@@ -81,7 +81,7 @@ bool ParseSpec(const string& spec,string& typeName,string& name)
     return true;
 }
 
-ParticlesDataMutable* readPTC(const char* filename,const bool headersOnly,char** attributes, int percentage)
+ParticlesDataMutable* readPTC(const char* filename,const bool headersOnly)
 {
     auto_ptr<istream> input(Gzip_In(filename,ios::in|ios::binary));
     if(!*input){

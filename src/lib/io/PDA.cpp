@@ -49,7 +49,7 @@ using namespace std;
 
 // TODO: convert this to use iterators like the rest of the readers/writers
 
-ParticlesDataMutable* readPDA(const char* filename,const bool headersOnly,char** attributes, int percentage)
+ParticlesDataMutable* readPDA(const char* filename,const bool headersOnly)
 {
     auto_ptr<istream> input(Gzip_In(filename,ios::in|ios::binary));
     if(!*input){
