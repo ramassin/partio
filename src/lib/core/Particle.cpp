@@ -42,6 +42,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 #include <cassert>
 namespace Partio{
 
+//ParticlesDataMutable::~ParticlesDataMutable()
+//{}
+
 std::string
 TypeName(ParticleAttributeType attrType)
 {
