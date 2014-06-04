@@ -33,9 +33,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 #ifndef _USE_MATH_DEFINES
-	#define _USE_MATH_DEFINES
+    #define _USE_MATH_DEFINES
 #endif
-
 #include <cmath>
 
 #include "../Partio.h"
@@ -212,7 +211,7 @@ ParticlesDataMutable* readPTC(const char* filename,const bool headersOnly)
 	     float nz = (float)z / 65535.0f;
 	     norm[2] = 2.0f * nz - 1.0f;
 	     float fphi = (float)phi / 65535.0f;
-	     fphi = 2.0f * (float)M_PI * (fphi - 0.5f);
+	     fphi = 2.0f * static_cast<float>(M_PI) * (fphi - 0.5f);
 	     //assert(-M_PI-0.0001 <= fphi && fphi <= M_PI+0.0001);
 	     float rxy = sqrt(1.0f - norm[2]*norm[2]);
 	     norm[0] = rxy * sin(fphi);

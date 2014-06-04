@@ -236,7 +236,11 @@ bool writeBIN(const char* filename,const ParticlesData& p,const bool /*compresse
     for(int i = 0; i < 250; i++)
     {header.fluidName[i] = 0;}
     string str = "partioExport";
-    str.copy(header.fluidName,15,0);  //  fluid name
+#ifdef PARTIO_WIN32
+	str._Copy_s(header.fluidName,15,0);  //  fluid name
+#else
+	str.copy(header.fluidName,15,0);  //  fluid name
+#endif
     header.framePerSecond = 24; // frames per second
     header.scaleScene = 1.0; // scene scale
     header.fluidType = 9; // fluid type
