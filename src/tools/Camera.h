@@ -1,6 +1,6 @@
 /*
 PARTIO SOFTWARE
-Copyright 2010 Disney Enterprises, Inc. All rights reserved
+Copyright 2013 Disney Enterprises, Inc. All rights reserved
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
@@ -33,9 +33,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
+#ifndef M_PI
+#define M_PI 3.1415926535
+#endif
+ 
 #ifndef _Camera_h_
 #define _Camera_h_
 
+#ifdef WIN32
+#define _USE_MATH_DEFINES
+#include <math.h>
+#endif //
 
 class Vec3
 {

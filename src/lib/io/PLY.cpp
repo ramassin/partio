@@ -30,6 +30,10 @@ static int vertex_pos_cb(p_ply_argument argument) {
 	ply_get_argument_user_data(argument, &pinfo, &idx);
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
 
+	int nParticles = particle->numParticles();
+	if (counter > nParticles)
+		counter = 0;
+
 	int * id = particle->dataWrite<int>(idHandle,counter);
 	*id=counter;
 
@@ -38,7 +42,7 @@ static int vertex_pos_cb(p_ply_argument argument) {
 	pos[idx]=val;
 	if (idx==2)
 		counter++;
-	//printf("vertexPos %d: %g", idx, val);
+	//if (counter>170000) printf("vertex %d Pos  %d: %g\n", counter, idx, val);
 	//printf(" ");
 
 	return 1;
@@ -53,6 +57,10 @@ static int vertex_col_cb_uint(p_ply_argument argument) {
 	void* pinfo = 0;
 	ply_get_argument_user_data(argument, &pinfo, &idx);
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
+
+	int nParticles = particle->numParticles();
+	if (counter > nParticles)
+		counter = 0;
 
 	float* pos=particle->dataWrite<float>(colHandle,counter);
 	float val = (float)ply_get_argument_value(argument) * scaleFactor;
