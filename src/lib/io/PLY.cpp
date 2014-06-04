@@ -46,7 +46,7 @@ static int vertex_pos_cb(p_ply_argument argument) {
 
 // vertex color handler callback
 static int vertex_col_cb_uint(p_ply_argument argument) {
-	const float scaleFactor=1.0/255.0;
+	const float scaleFactor=1.0f/255.0f;
 	long idx;
 
 	static unsigned int counter = 0; //unfortunately we have to keep a local counter
