@@ -171,7 +171,7 @@ static void render()
                             !particles->attributeInfo("color", colorAttr) &
                             !particles->attributeInfo("pointColor", colorAttr))
                     {
-                        //std::cerr<<"Failed to find color attribute "<<std::endl;
+                        std::cerr<<"Failed to find color attribute "<<std::endl;
                         colorFromIndex = -1;
                     }
                     else
@@ -290,8 +290,11 @@ static void render()
 
     glPopMatrix();
     restorePerspectiveProjection();
-
-    if (particles->numParticles() > 0)
+	
+	static GLfloat* rgba = NULL;
+	rgba = (GLfloat *) malloc(particles->numParticles()*sizeof(GLfloat)*4);
+    
+	if (particles->numParticles() > 0)
     {
         // now setup the position/color/alpha output pointers
 
@@ -302,7 +305,8 @@ static void render()
         float colorG = G;
         float colorB = B;
 
-        static GLfloat* rgba = NULL;
+
+
 
         if (colorFromIndex >=0)
         {
@@ -314,7 +318,7 @@ static void render()
                 particles->attributeInfo(alphaFromIndex, alphaAttr);
 				cout << alphaAttr.name.c_str() << endl;
                 const float* alphaPtr=particles->data<float>(alphaAttr,0);
-                rgba = (GLfloat *) malloc(particles->numParticles()*sizeof(GLfloat)*4);
+
                 for (int i=0;i<particles->numParticles();i++)
                 {
 						rgba[i*4] = rgbPtr[i*3];
@@ -332,7 +336,7 @@ static void render()
                 glColorPointer(  4, GL_FLOAT, 0, rgba );
 				if (rgba)
 				{
-					free (rgba);
+					//free (rgba);
 				}
             }
             else
@@ -345,7 +349,6 @@ static void render()
             if (alphaFromIndex >= 0)
             {
                 particles->attributeInfo(alphaFromIndex, alphaAttr);
-                rgba = (GLfloat *) malloc(particles->numParticles()*sizeof(GLfloat)*4);
                 const float * alphaPtr=particles->data<float>(alphaAttr,0);
                 for (int i=0;i<particles->numParticles();i++)
                 {
@@ -358,7 +361,7 @@ static void render()
             }
             else
             {
-                rgba = (GLfloat *) malloc(particles->numParticles()*sizeof(GLfloat)*3);
+
                 for (int i=0;i<particles->numParticles();i++)
                 {
                     rgba[i*3] = colorR+brightness;
@@ -370,14 +373,16 @@ static void render()
             }
             if (rgba)
 			{
-				free (rgba);
+				//free (rgba);
 			}
+
         }
     }
 
     glPointSize(pointSize);
 
-    glDrawArrays( GL_POINTS, 0, particles->numParticles() );
+    glDrawArrays( GL_POINTS, 0 , particles->numParticles() );
+	free (rgba);
 
     glDisableClientState( GL_VERTEX_ARRAY );
     glDisableClientState( GL_COLOR_ARRAY );
