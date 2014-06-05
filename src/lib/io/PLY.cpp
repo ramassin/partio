@@ -1,6 +1,29 @@
 /*
 AAAAAAAAAAAAAAAAAAAAAAAARRRRRRRRRRRRRRRRRRRRRRGHHHHHHHHHHHHHHHHHHHHHH
+
+Core List (required)
+--------------------
+
+Element: vertex
+x        float        x coordinate
+y        float        y coordinate
+z        float        z coordinate
+Element: face
+vertex_indices        list of int        indices to vertices
+
+Second List (often used)
+------------------------
+
+Element: vertex
+nx        float        x component of normal
+ny        float        y component of normal
+nz        float        z component of normal
+red        uchar        red part of color
+green        uchar        green part of color
+blue        uchar        blue part of color
+alpha        uchar        amount of transparency
 */
+
 #include "../Partio.h"
 #include "../core/ParticleHeaders.h"
 #include "ZIP.h"

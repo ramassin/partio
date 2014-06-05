@@ -640,6 +640,61 @@ void handleKeyInfo()
         keyStates['Z'] = false;
         validKey = true;
     }
+	
+	if (keyStates['r'])
+    {
+        if ( R > 0)
+        {
+            R -= 0.05;
+        }
+        keyStates['r'] = false;
+        validKey = true;
+    }
+    else if (keyStates['R'])
+    {
+        if ( R < 1.0f)
+        {
+             R += 0.05;
+        }
+        keyStates['R'] = false;
+        validKey = true;
+    }
+	else if (keyStates['g'])
+    {
+        if ( G > 0)
+        {
+            G -= 0.05;
+        }
+        keyStates['g'] = false;
+        validKey = true;
+    }
+    else if (keyStates['G'])
+    {
+        if ( G < 1.0f)
+        {
+             G += 0.05;
+        }
+        keyStates['G'] = false;
+        validKey = true;
+    }
+	else if (keyStates['b'])
+    {
+        if ( B > 0)
+        {
+            B -= 0.05;
+        }
+        keyStates['b'] = false;
+        validKey = true;
+    }
+    else if (keyStates['B'])
+    {
+        if ( B < 1.0f)
+        {
+             B += 0.05;
+        }
+        keyStates['B'] = false;
+        validKey = true;
+    }
 
     if (brightnessUpPressed)
     {
