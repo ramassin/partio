@@ -18,7 +18,16 @@ AAAAAAAAAAAAAAAAAAAAAAAARRRRRRRRRRRRRRRRRRRRRRGHHHHHHHHHHHHHHHHHHHHHH
 #include "../../extern/rply/rply.h"
 
 
-Partio::ParticleAttribute idHandle, posHandle, colHandle, qualHandle;
+// GLOBALS 
+p_ply input;
+Partio::ParticlesDataMutable* simple = 0;
+void * simplePtr;
+
+Partio::ParticleAttribute idHandle, posHandle, colHandle;
+std::vector<Partio::ParticleAttribute> genericHandles;
+std::string inputFileName;
+
+std::map<std::string, e_ply_type> attrs;
 
 // vertex position handler callback
 static int vertex_pos_cb(p_ply_argument argument) {
@@ -48,7 +57,7 @@ static int vertex_pos_cb(p_ply_argument argument) {
 	return 1;
 }
 
-// vertex color handler callback
+// vertex color handler callback for uints
 static int vertex_col_cb_uint(p_ply_argument argument) {
 	const float scaleFactor=1.0f/255.0f;
 	long idx;
@@ -76,20 +85,58 @@ static int vertex_col_cb_uint(p_ply_argument argument) {
 	return 1;
 }
 
-// vertex quality handler callback
-static int vertex_qual_cb(p_ply_argument argument) {
+// vertex color handler callback for floats
+static int vertex_col_cb_float(p_ply_argument argument) {
+
+	long idx;
+
 	static unsigned int counter = 0; //unfortunately we have to keep a local counter
 	void* pinfo = 0;
-	ply_get_argument_user_data(argument, &pinfo, NULL);
+	ply_get_argument_user_data(argument, &pinfo, &idx);
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
 
-	float* pos=particle->dataWrite<float>(qualHandle,counter);
+	if (counter > particle->numParticles())
+		counter = 0;
+
+	float* pos=particle->dataWrite<float>(colHandle,counter);
+	float val = (float)ply_get_argument_value(argument);
+	pos[idx]=val;
+
+	// after we've done with Blue, increment particle index
+	if (idx==2)
+		counter++;
+
+	//printf("color %d: %g", idx, ply_get_argument_value(argument));
+	//if (idx==2) printf("\n");
+	//else printf(" ");
+	return 1;
+}
+
+// generic float callback, the integer value is now the index in the generic handle vector
+static int generic_vertex_cb(p_ply_argument argument) {
+
+	static std::vector<unsigned int> counters(32); //do you really need more than 32?
+	long idx;
+	void* pinfo = 0;
+	ply_get_argument_user_data(argument, &pinfo, &idx);
+	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
+
+	if (counters[idx] > particle->numParticles())
+		counters[idx] = 0;
+	float* pos=particle->dataWrite<float>(genericHandles[idx],counters[idx]);
 	float val = (float)ply_get_argument_value(argument);
 	*pos=val;
-	counter++;
+	counters[idx]++;
 
 	return 1;
 }
+
+
+
+namespace Partio
+{
+
+	using namespace std;
 
 static Partio::ParticleAttributeType typePLY2Partio(e_ply_type plyType){
 	 Partio::ParticleAttributeType partioType;
@@ -125,56 +172,18 @@ static Partio::ParticleAttributeType typePLY2Partio(e_ply_type plyType){
 			partioType = Partio::ParticleAttributeType::NONE;
 			break;
 	 }
-	
+	return partioType;
 }
+//return a vector of properties from ply header
+typedef std::pair<std::string, e_ply_type> plyVertexAttrib;
 
-namespace Partio
+int parsePlyHeader(p_ply & input, std::map<std::string, e_ply_type> & attrs)
 {
-
-	using namespace std;
-
-	// TODO: convert this to use iterators like the rest of the readers/writers
-
-	ParticlesDataMutable* readPLY(const char* filename,const bool headersOnly)
-	{
-		p_ply input = ply_open(filename, NULL, 0, NULL);
-
-		if (!input)
-		{
-			cerr<<"Partio: Can't open particle data file: "<<filename<<endl;
-			return 0;
-		}
-
 		if (!ply_read_header(input)) 
 		{
-			cerr<<"Partio: Problem parsing PLY header in file: "<<filename<<endl;
+			std::cerr<<"Partio: Problem parsing PLY header"<< inputFileName <<std::endl;
 			return 0;
 		}
-		Partio::ParticlesDataMutable* simple = 0;
-		if (headersOnly) simple=new ParticleHeaders;
-		else simple=create();
-		printf("created!\n");  
-
-		// create null pointer to partio stuct for callbacks
-		void * simplePtr = reinterpret_cast<void *>(simple);
-
-		unsigned int nPart0 = ply_set_read_cb(input, "vertex", "x", vertex_pos_cb, simplePtr, 0);
-		unsigned int nPart1 = ply_set_read_cb(input, "vertex", "y", vertex_pos_cb, simplePtr, 1);
-		unsigned int nPart2 = ply_set_read_cb(input, "vertex", "z", vertex_pos_cb, simplePtr, 2);
-
-		if (!(nPart0 == nPart1 && nPart0 == nPart2))	{ 
-			cerr<<"Partio: Problem parsing PLY properties in file: "<<filename<<endl;
-			return 0;
-		}
-
-		else {
-			idHandle =	simple->addAttribute("id",  Partio::INT, 1);
-			posHandle = simple->addAttribute("position",  VECTOR, 3);
-		}
-
-		unsigned int nCol0  = ply_set_read_cb(input, "vertex", "red",   vertex_col_cb_uint, simplePtr, 0);
-		unsigned int nCol1  = ply_set_read_cb(input, "vertex", "green", vertex_col_cb_uint, simplePtr, 1);
-		unsigned int nCol2  = ply_set_read_cb(input, "vertex", "blue",  vertex_col_cb_uint, simplePtr, 2);
 
 		const char* lastComment = NULL;
 
@@ -184,55 +193,137 @@ namespace Partio
 			printf("[PLY][Comment] %s\n",lastComment);
 		}
 
-		p_ply_element vertexElem = ply_get_next_element(input, NULL);
+		p_ply_element vertexElem = NULL;
+		unsigned int vertexCount = 0;
+		
 		
 		const char * elemName;
 		long elemCount;
-		ply_get_element_info(vertexElem, &elemName, &elemCount);
-		printf("elem name %s count %i \n", elemName, elemCount);
-
-		p_ply_property thisProp = NULL;
-
-		std::vector<ParticleAttribute> partAttr;
-
-		while (thisProp = ply_get_next_property(vertexElem, thisProp))
+		while (vertexElem = ply_get_next_element(input, vertexElem))
 		{
-			const char * propName;
-			e_ply_type  propType;
+			ply_get_element_info(vertexElem, &elemName, &elemCount);
+			printf("elem name %s count %i \n", elemName, elemCount);
+			if (strcmp(elemName, "vertex") == 0){ //we only care about vertices
+				vertexCount = elemCount;
+				p_ply_property thisProp = NULL;
+				while (thisProp = ply_get_next_property(vertexElem, thisProp))
+				{
+					const char * propName;
+					e_ply_type  propType;
 
-			ply_get_property_info(thisProp, &propName, &propType, NULL, NULL);
-			printf("%s: type %i \n", propName, propType);
-			ParticleAttribute thisAttribute;
-			thisAttribute.name=std::string(propName);
-			
-			thisAttribute.type=Partio::ParticleAttributeType::FLOAT;
+					ply_get_property_info(thisProp, &propName, &propType, NULL, NULL);
+					printf("%s: type %i \n", propName, propType);
 
-		} 
-
-
-		if (nCol0 == 0) 	{
-			 cout<<"Partio: No colors in file: "<<filename<<endl;
+					plyVertexAttrib attr(std::string(propName), propType);
+					attrs.insert( attr);
+				}
+			}
 		}
-		else if ((nPart0 != nCol0) || !(nCol0 == nCol1  && nCol0 == nCol2))	{
-			cerr<<"Partio: Problem with colours in file: "<<filename<<endl;
-			return 0;
-		}
-		else {
+		return vertexCount;
+}
+
+int setColourCallbacks(std::string r, std::string g, std::string b )
+{	
+	if ( (attrs.find(r) != attrs.end()) && (attrs.find(g) != attrs.end()) &&
+			 (attrs.find(b) != attrs.end()))
+		{
 			colHandle = simple->addAttribute("pointColor",  VECTOR, 3);	
+			Partio::ParticleAttributeType colorType = typePLY2Partio ( attrs[r] ); //we assume r g b are all the same colour
+			switch (colorType)
+			{
+			case Partio::ParticleAttributeType::INT:
+				ply_set_read_cb(input, "vertex", r.c_str(),   vertex_col_cb_uint, simplePtr, 0);
+				ply_set_read_cb(input, "vertex", g.c_str(), vertex_col_cb_uint, simplePtr, 1);
+				ply_set_read_cb(input, "vertex", b.c_str(),  vertex_col_cb_uint, simplePtr, 2);
+			break;
+			case Partio::ParticleAttributeType::FLOAT:
+				ply_set_read_cb(input, "vertex", r.c_str(),   vertex_col_cb_float, simplePtr, 0);
+				ply_set_read_cb(input, "vertex", g.c_str(), vertex_col_cb_float, simplePtr, 1);
+				ply_set_read_cb(input, "vertex", b.c_str(),  vertex_col_cb_float, simplePtr, 2);
+			}
+
+			attrs.erase(r);
+			attrs.erase(g);
+			attrs.erase(b);
+			return 1;
 		}
+	return 0;
+}
 
-		unsigned int nQual = ply_set_read_cb(input, "vertex", "quality",  vertex_qual_cb, simplePtr, 0);
 
-		if (nQual>0)
-			qualHandle = simple->addAttribute("quality",  FLOAT, 1);
 
-		simple->addParticles(nPart0);
+	// TODO: convert this to use iterators like the rest of the readers/writers
 
-		if (!ply_read(input)){
-			cerr<<"Partio: Problem parsing PLY data in file: "<<filename<<endl;
+	ParticlesDataMutable* readPLY(const char* filename,const bool headersOnly)
+	{
+		inputFileName= string(filename);
+
+		input = ply_open(filename, NULL, 0, NULL);
+
+		if (!input)
+		{
+			cerr<<"Partio: Can't open particle data file: "<<inputFileName<<endl;
 			return 0;
 		}
 
+		if (headersOnly)
+		{
+			simple=new ParticleHeaders;
+		}
+		else simple=create();
+		//printf("created!\n");  
+
+		unsigned int nParticles = parsePlyHeader(input, attrs);
+
+
+		// create null pointer to partio stuct for callbacks
+		simplePtr = reinterpret_cast<void *>(simple);
+
+		if ( (attrs.find("x") != attrs.end()) &&
+			 (attrs.find("y") != attrs.end()) &&
+			 (attrs.find("z") != attrs.end()) )
+		{
+			idHandle =	simple->addAttribute("id",  Partio::INT, 1);
+			posHandle = simple->addAttribute("position",  VECTOR, 3);
+			
+			ply_set_read_cb(input, "vertex", "x", vertex_pos_cb, simplePtr, 0);
+			ply_set_read_cb(input, "vertex", "y", vertex_pos_cb, simplePtr, 1);
+			ply_set_read_cb(input, "vertex", "z", vertex_pos_cb, simplePtr, 2);
+			
+			attrs.erase("x");
+			attrs.erase("y");
+			attrs.erase("z");
+		} else {
+			cerr<<"Partio: Problem parsing PLY properties in file "<<inputFileName
+				<< "\n No x,y,z coordinates found"<<endl;
+		}
+
+		int nCol = 0;
+		nCol += setColourCallbacks("r", "g", "b");
+		nCol += setColourCallbacks("red", "green", "blue");
+		nCol += setColourCallbacks("R", "G", "B");
+		if (nCol == 0) 	{
+			 cout<<"Partio: No colors in file: "<<inputFileName<<endl;
+		}
+
+		int i = 0;
+		for(std::map<std::string, e_ply_type>::iterator it = attrs.begin(); it != attrs.end(); it++) {
+			genericHandles.push_back(simple->addAttribute(it->first.c_str(),  VECTOR, 1));
+
+			ply_set_read_cb(input, "vertex", it->first.c_str(), generic_vertex_cb, simplePtr, i);
+			cout << "set callback for leftover attribute: " << it->first <<" typt: " << it->second << endl;
+			i++;
+		}
+
+		// all is set up now, proceed with parsing the file (if no headersOnly)
+		if (!headersOnly)
+			{
+			simple->addParticles(nParticles);
+			if (!ply_read(input)){
+				cerr<<"Partio: Problem parsing PLY data in file: "<<inputFileName<<endl;
+				return 0;
+			}
+		}
 		ply_close(input);
 		//printf("read!\n");
 		return simple;
