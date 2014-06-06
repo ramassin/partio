@@ -45,9 +45,11 @@ alpha        uchar        amount of transparency
 p_ply input;
 Partio::ParticlesDataMutable* simple = 0;
 void * simplePtr;
-
-Partio::ParticleAttribute idHandle, posHandle, colHandle;
+// handles for standard attributes (color and normal may not exist)
+Partio::ParticleAttribute idHandle, posHandle, colHandle, normHandle;
+// container for extra attributes per vertex
 std::vector<Partio::ParticleAttribute> genericHandles;
+
 std::string inputFileName;
 
 std::map<std::string, e_ply_type> attrs;
@@ -63,7 +65,7 @@ static int vertex_pos_cb(p_ply_argument argument) {
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
 
 	int nParticles = particle->numParticles();
-	if (counter > nParticles)
+	if (counter > (unsigned int)nParticles)
 		counter = 0;
 
 	int * id = particle->dataWrite<int>(idHandle,counter);
@@ -74,13 +76,13 @@ static int vertex_pos_cb(p_ply_argument argument) {
 	pos[idx]=val;
 	if (idx==2)
 		counter++;
-	//if (counter>170000) printf("vertex %d Pos  %d: %g\n", counter, idx, val);
+	//printf("vertex %d Pos  %d: %g\n", counter, idx, val);
 	//printf(" ");
 
 	return 1;
 }
 
-// vertex color handler callback for uints
+// vertex color callback for uints
 static int vertex_col_cb_uint(p_ply_argument argument) {
 	const float scaleFactor=1.0f/255.0f;
 	long idx;
@@ -90,8 +92,8 @@ static int vertex_col_cb_uint(p_ply_argument argument) {
 	ply_get_argument_user_data(argument, &pinfo, &idx);
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
 
-	int nParticles = particle->numParticles();
-	if (counter > nParticles)
+	int nParticles = (unsigned int)particle->numParticles();
+	if (counter > (unsigned int)nParticles)
 		counter = 0;
 
 	float* pos=particle->dataWrite<float>(colHandle,counter);
@@ -108,7 +110,7 @@ static int vertex_col_cb_uint(p_ply_argument argument) {
 	return 1;
 }
 
-// vertex color handler callback for floats
+// vertex color callback for floats
 static int vertex_col_cb_float(p_ply_argument argument) {
 
 	long idx;
@@ -118,10 +120,65 @@ static int vertex_col_cb_float(p_ply_argument argument) {
 	ply_get_argument_user_data(argument, &pinfo, &idx);
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
 
-	if (counter > particle->numParticles())
+	if (counter > (unsigned int)particle->numParticles())
 		counter = 0;
 
 	float* pos=particle->dataWrite<float>(colHandle,counter);
+	float val = (float)ply_get_argument_value(argument);
+	pos[idx]=val;
+
+	// after we've done with Blue, increment particle index
+	if (idx==2)
+		counter++;
+
+	//printf("color %d: %g", idx, ply_get_argument_value(argument));
+	//if (idx==2) printf("\n");
+	//else printf(" ");
+	return 1;
+}
+
+// vertex normal callback for uints
+static int vertex_normal_cb_uint(p_ply_argument argument) {
+	const float scaleFactor=1.0f/255.0f;
+	long idx;
+
+	static unsigned int counter = 0; //unfortunately we have to keep a local counter
+	void* pinfo = 0;
+	ply_get_argument_user_data(argument, &pinfo, &idx);
+	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
+
+	int nParticles = particle->numParticles();
+	if (counter > (unsigned int)nParticles)
+		counter = 0;
+
+	float* pos=particle->dataWrite<float>(normHandle,counter);
+	float val = (float)ply_get_argument_value(argument) * scaleFactor;
+	pos[idx]=val;
+
+	// after we've done with Blue, increment particle index
+	if (idx==2)
+		counter++;
+
+	//printf("color %d: %g", idx, ply_get_argument_value(argument));
+	//if (idx==2) printf("\n");
+	//else printf(" ");
+	return 1;
+}
+
+// vertex normal callback for floats
+static int vertex_normal_cb_float(p_ply_argument argument) {
+
+	long idx;
+
+	static unsigned int counter = 0; //unfortunately we have to keep a local counter
+	void* pinfo = 0;
+	ply_get_argument_user_data(argument, &pinfo, &idx);
+	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
+
+	if (counter > (unsigned int)particle->numParticles())
+		counter = 0;
+
+	float* pos=particle->dataWrite<float>(normHandle,counter);
 	float val = (float)ply_get_argument_value(argument);
 	pos[idx]=val;
 
@@ -144,7 +201,7 @@ static int generic_vertex_cb(p_ply_argument argument) {
 	ply_get_argument_user_data(argument, &pinfo, &idx);
 	Partio::ParticlesDataMutable* particle =reinterpret_cast<Partio::ParticlesDataMutable *>(pinfo);
 
-	if (counters[idx] > particle->numParticles())
+	if (counters[idx] > (unsigned int)particle->numParticles())
 		counters[idx] = 0;
 	float* pos=particle->dataWrite<float>(genericHandles[idx],counters[idx]);
 	float val = (float)ply_get_argument_value(argument);
@@ -155,6 +212,58 @@ static int generic_vertex_cb(p_ply_argument argument) {
 }
 
 
+std::string  printPlyType(e_ply_type plyType){
+	std::string ret;
+		 switch (plyType)
+	 {
+		case e_ply_type::PLY_INT8 :
+			ret = "PLY_INT8";
+			break;
+		case e_ply_type::PLY_INT16 :
+			ret = "PLY_INT16";
+			break;
+		case e_ply_type::PLY_UINT16 :
+			ret = "PLY_UINT16";
+			break;
+		case e_ply_type::PLY_INT32 :
+			ret = "PLY_INT32";
+			break;
+		case e_ply_type::PLY_CHAR :
+			ret = "PLY_CHAR";
+			break;
+		case e_ply_type::PLY_UCHAR :
+			ret = "PLY_UCHAR";
+			break;
+		case e_ply_type::PLY_SHORT :
+			ret = "PLY_SHORT";
+			break;
+		case e_ply_type::PLY_USHORT :
+			ret = "PLY_USHORT";
+			break;
+		case e_ply_type::PLY_INT :
+			ret = "PLY_INT";
+			break;
+		case e_ply_type::PLY_UINT :
+			ret = "PLY_UINT";
+			break;
+		case e_ply_type::PLY_FLOAT :
+			ret = "PLY_FLOAT";
+			break;
+		case e_ply_type::PLY_FLOAT32 :
+			ret = "PLY_FLOAT32";
+			break;
+		case e_ply_type::PLY_FLOAT64 :
+			ret = "PLY_FLOAT64";
+			break;
+		case e_ply_type::PLY_DOUBLE :
+			ret = "PLY_DOUBLE";
+			break;
+		default:
+			ret = "INVALID";
+			break;
+	 }
+	return ret;
+}
 
 namespace Partio
 {
@@ -188,7 +297,7 @@ static Partio::ParticleAttributeType typePLY2Partio(e_ply_type plyType){
 		case e_ply_type::PLY_FLOAT32:
 		case e_ply_type::PLY_FLOAT64:
 		case e_ply_type::PLY_DOUBLE:
-			partioType = Partio::ParticleAttributeType::INT;
+			partioType = Partio::ParticleAttributeType::FLOAT;
 			break;
 
 		default:
@@ -235,7 +344,7 @@ int parsePlyHeader(p_ply & input, std::map<std::string, e_ply_type> & attrs)
 					e_ply_type  propType;
 
 					ply_get_property_info(thisProp, &propName, &propType, NULL, NULL);
-					printf("%s: type %i \n", propName, propType);
+					printf("%s: type %s \n", propName, printPlyType( propType).c_str());
 
 					plyVertexAttrib attr(std::string(propName), propType);
 					attrs.insert( attr);
@@ -245,33 +354,35 @@ int parsePlyHeader(p_ply & input, std::map<std::string, e_ply_type> & attrs)
 		return vertexCount;
 }
 
-int setColourCallbacks(std::string r, std::string g, std::string b )
+int setTripletCallbacks(std::string a, std::string b, std::string c, std::string attributNAme, ParticleAttribute & handle, p_ply_read_cb plyCallbackUint,  p_ply_read_cb plyCallbackFloat )
 {	
-	if ( (attrs.find(r) != attrs.end()) && (attrs.find(g) != attrs.end()) &&
-			 (attrs.find(b) != attrs.end()))
+	if ( (attrs.find(a) != attrs.end()) && (attrs.find(b) != attrs.end()) &&
+			 (attrs.find(c) != attrs.end()))
 		{
-			colHandle = simple->addAttribute("pointColor",  VECTOR, 3);	
-			Partio::ParticleAttributeType colorType = typePLY2Partio ( attrs[r] ); //we assume r g b are all the same colour
+			handle = simple->addAttribute(attributNAme.c_str(),  VECTOR, 3);	
+			//printf("attribute %s type: %d\n",a.c_str(),attrs[a]);
+			//cout << "corresponds to: "<< printPlyType(attrs[a]) << endl;
+			Partio::ParticleAttributeType colorType = typePLY2Partio ( attrs[a] );	//we assume type is same for all triplet
 			switch (colorType)
 			{
 			case Partio::ParticleAttributeType::INT:
-				ply_set_read_cb(input, "vertex", r.c_str(),   vertex_col_cb_uint, simplePtr, 0);
-				ply_set_read_cb(input, "vertex", g.c_str(), vertex_col_cb_uint, simplePtr, 1);
-				ply_set_read_cb(input, "vertex", b.c_str(),  vertex_col_cb_uint, simplePtr, 2);
+				ply_set_read_cb(input, "vertex", a.c_str(), plyCallbackUint, simplePtr, 0);
+				ply_set_read_cb(input, "vertex", b.c_str(), plyCallbackUint, simplePtr, 1);
+				ply_set_read_cb(input, "vertex", c.c_str(), plyCallbackUint, simplePtr, 2);
 			break;
 			case Partio::ParticleAttributeType::FLOAT:
-				ply_set_read_cb(input, "vertex", r.c_str(),   vertex_col_cb_float, simplePtr, 0);
-				ply_set_read_cb(input, "vertex", g.c_str(), vertex_col_cb_float, simplePtr, 1);
-				ply_set_read_cb(input, "vertex", b.c_str(),  vertex_col_cb_float, simplePtr, 2);
+				ply_set_read_cb(input, "vertex", a.c_str(),  plyCallbackFloat, simplePtr, 0);
+				ply_set_read_cb(input, "vertex", b.c_str(),  plyCallbackFloat, simplePtr, 1);
+				ply_set_read_cb(input, "vertex", c.c_str(),  plyCallbackFloat, simplePtr, 2);
 			}
-
-			attrs.erase(r);
-			attrs.erase(g);
+			attrs.erase(a);
 			attrs.erase(b);
+			attrs.erase(c);
 			return 1;
 		}
 	return 0;
 }
+
 
 
 
@@ -321,12 +432,19 @@ int setColourCallbacks(std::string r, std::string g, std::string b )
 				<< "\n No x,y,z coordinates found"<<endl;
 		}
 
+		// assign color callback to rgb
 		int nCol = 0;
-		nCol += setColourCallbacks("r", "g", "b");
-		nCol += setColourCallbacks("red", "green", "blue");
-		nCol += setColourCallbacks("R", "G", "B");
+		nCol += setTripletCallbacks("r", "g", "b",			"pointColor", colHandle, vertex_col_cb_uint, vertex_col_cb_float);
+		nCol += setTripletCallbacks("red", "green", "blue", "pointColor", colHandle, vertex_col_cb_uint, vertex_col_cb_float);
 		if (nCol == 0) 	{
 			 cout<<"Partio: No colors in file: "<<inputFileName<<endl;
+		}
+		// assign normal callback
+		int nNorm = 0;
+		nNorm += setTripletCallbacks("nx", "ny", "nz", "normal", normHandle, vertex_normal_cb_uint, vertex_normal_cb_float);
+		nNorm += setTripletCallbacks("Nx", "Ny", "Nz", "normal", normHandle, vertex_normal_cb_uint, vertex_normal_cb_float);
+		if (nNorm == 0) 	{
+			 cout<<"Partio: No normals in file: "<<inputFileName<<endl;
 		}
 
 		int i = 0;
@@ -334,7 +452,7 @@ int setColourCallbacks(std::string r, std::string g, std::string b )
 			genericHandles.push_back(simple->addAttribute(it->first.c_str(),  VECTOR, 1));
 
 			ply_set_read_cb(input, "vertex", it->first.c_str(), generic_vertex_cb, simplePtr, i);
-			cout << "set callback for leftover attribute: " << it->first <<" typt: " << it->second << endl;
+			cout << "set callback for leftover attribute: " << it->first <<" type: " << printPlyType( it->second) << endl;
 			i++;
 		}
 
